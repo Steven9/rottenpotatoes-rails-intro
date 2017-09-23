@@ -12,21 +12,28 @@ class MoviesController < ApplicationController
 
   def index
     @all_ratings = Movie.ratings
-    if params[:ratings]
-      @filter = params[:ratings].keys
+    if params[:ratings] || session[:ratings]
+      @filter = params[:ratings] || session[:ratings]
     else
-      @filter = @all_ratings
+      @filter = Hash[@all_ratings.map {|rating| [rating, rating]}]
     end
-      
+    
+    sort = params[:sort] || session[:sort]
     if params[:sort] == "title"
       @title_header = 'hilite'
-      @movies = Movie.where({rating: @filter}).order("title")
     elsif params[:sort] == "release_date"
       @release_date_header = 'hilite'
-      @movies = Movie.where({rating: @filter}).order("release_date")
     else
-      @movies = Movie.where({rating: @filter})
+      @title_header = ''
+      @release_date_header = ''
     end
+    
+    if params[:sort] != session[:sort] or params[:ratings] != session[:ratings]
+      session[:sort] = sort
+      session[:ratings] = @filter
+      redirect_to :sort => sort, :ratings => @filter and return
+    end
+    @movies = Movie.where(rating: @filter.keys).order(sort)
   end
 
   def new
